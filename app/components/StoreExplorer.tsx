@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import type { Store, StoreType } from '@/lib/types';
 
-declare global { interface Window { kakao: any; } }
+declare global { interface Window { kakao?: any; } }
 const labels: Record<StoreType, string> = { onstore: '온스토어', justdream: '그냥드림' };
 type UserLocation = { latitude:number; longitude:number };
 
