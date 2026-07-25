@@ -5,7 +5,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase';
 import type { Store, StoreType } from '@/lib/types';
 
 declare global { interface Window { kakao?: any; } }
-const labels: Record<StoreType, string> = { onstore: '온스토어', justdream: '그냥드림' };
+const labels: Record<string, string> = { onstore: '온스토어', justdream: '그냥드림' };
 type UserLocation = { latitude:number; longitude:number };
 
 function distanceKm(a:UserLocation,b:UserLocation){const r=6371;const dLat=(b.latitude-a.latitude)*Math.PI/180;const dLon=(b.longitude-a.longitude)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a.latitude*Math.PI/180)*Math.cos(b.latitude*Math.PI/180)*Math.sin(dLon/2)**2;return r*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}

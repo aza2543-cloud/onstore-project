@@ -1,3 +1,9 @@
+// 위치 정보 규격서
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
+}
+
 // 신청서 형태: 'general'(일반형) 또는 'agency'(거점형)만 가능
 export type ApplicationType = 'general' | 'agency';
 
@@ -14,7 +20,7 @@ export interface StoreApplication {
   status: ApplicationStatus;
   store_name: string;
   
-  // 일반형 입력 항목들 (? 표시는 값이 없을 수도 있다는 뜻)
+  // 일반형 입력 항목들
   user_name?: string;
   birth_date?: string;
   address?: string;
@@ -39,10 +45,29 @@ export interface StoreApplication {
 
 // 매장 정보 규격서
 export interface Store {
-  id: string | number;
+  id: string;
   name: string;
   type?: StoreType;
+  store_type: StoreType; // 👈 undefined 가능성을 제거하여 객체 인덱스 오류 방지
+  category?: string;
+  available_items?: string[];
+  
   address?: string;
+  
+  // 좌표값 (위도, 경도)
   lat?: number;
   lng?: number;
+  latitude: number;
+  longitude: number;
+  
+  // 영업 및 상태 정보
+  is_temporarily_closed?: boolean;
+  closed_weekdays?: number[];
+  open_time?: string;
+  close_time?: string;
+  business_hours?: string;
+  holiday_note?: string; // 👈 153번 줄의 holiday_note 추가
+  phone?: string;
+  description?: string;
+  is_active?: boolean;
 }
