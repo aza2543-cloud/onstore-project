@@ -4,6 +4,9 @@ export type ApplicationType = 'general' | 'agency';
 // 처리 상태: 'pending'(대기중), 'approved'(승인), 'rejected'(거절)만 가능
 export type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 
+// 매장 구분 타입
+export type StoreType = 'onstore' | 'justdream';
+
 // DB에 저장될 신청서 1건의 형태 규격서
 export interface StoreApplication {
   id: string;
@@ -32,4 +35,14 @@ export interface StoreApplication {
 
   created_at: string;
   updated_at: string;
+}
+
+// 매장 정보 규격서
+export interface Store {
+  id: string | number;
+  name: string;
+  type?: StoreType;
+  address?: string;
+  lat?: number;
+  lng?: number;
 }
