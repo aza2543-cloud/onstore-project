@@ -140,12 +140,10 @@ export default function ApplyPage() {
     );
 
     if (isBucheon && hasValidDong) {
-      // ✅ 관할 대상: 주소 및 동 입력
       setAddress(fullAddress);
       setDong(extractedDong);
       alert(`✅ 관할 지원 대상 거주 지역(${extractedDong || '관할동'}) 인증이 완료되었습니다.`);
     } else {
-      // ❌ 미대상: 기존 주소 초기화 및 차단
       setAddress('');
       setDong('');
       alert(
@@ -165,7 +163,7 @@ export default function ApplyPage() {
     }
   };
 
-  // 대상자 중복 확인
+  // 대상자 중복 확인 (CRM 및 신청 내역 동시 검사 API 호출)
   async function handleCheckDuplicate(e: React.FormEvent) {
     e.preventDefault();
     if (!participantName || !birthDate) {
@@ -179,16 +177,11 @@ export default function ApplyPage() {
     }
 
     try {
-      const res = await fetch('/api/participant-check', {
-        method: 'POST',
+      const res = await fetch(`/api/apply?name=${encodeURIComponent(participantName)}&birthDate=${encodeURIComponent(birthDate)}`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: participantName,
-          birthDate: birthDate,
-        }),
       });
 
       const data = await res.json();
@@ -198,11 +191,11 @@ export default function ApplyPage() {
         return;
       }
 
-      if (data.duplicate) {
+      if (data.isDuplicate) {
         setCheckResult({
           checked: true,
           isDuplicate: true,
-          msg: '⚠️ [중복] 이미 지원 이력이 있는 대상자입니다.',
+          msg: `⚠️ [중복] ${data.message || '이미 지원 이력이 있는 대상자입니다.'}`,
         });
       } else {
         setCheckResult({
@@ -278,7 +271,6 @@ export default function ApplyPage() {
 
       if (res.ok) {
         alert('신청서가 성공적으로 접수되었습니다.');
-        // 폼 초기화
         setParticipantName('');
         setBirthDate('');
         setStoreName('');
