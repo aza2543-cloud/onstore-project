@@ -5,7 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// 1. GET: 중복 대상자 조회 기능 (추가됨)
+// 1. GET: 중복 대상자 조회 기능 (participants & usage_applications 양쪽 모두 체크)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -21,30 +21,47 @@ export async function GET(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // usage_applications 테이블에서 이름과 생년월일 중복 체크 (공백 제거 후 비교)
-    const { data, error } = await supabase
-      .from('usage_applications')
-      .select('id, participant_name, birth_date, created_at')
+    // [체크 1] participants (대상자 CRM 테이블)에서 중복 확인
+    const { data: participantData, error: pError } = await supabase
+      .from('participants')
+      .select('id')
       .eq('participant_name', name)
       .eq('birth_date', birthDate)
       .limit(1);
 
-    if (error) {
-      console.error('Check duplicate error:', error);
-      throw error;
+    if (pError) {
+      console.warn('participants table query warning:', pError.message);
     }
 
-    // 중복 데이터가 1건이라도 존재하면 중복 처리
-    if (data && data.length > 0) {
+    if (participantData && participantData.length > 0) {
       return NextResponse.json({
         isDuplicate: true,
         exists: true,
-        message: '이미 등록되어 있는 대상자입니다.',
-        applicant: data[0],
+        message: '이미 CRM에 등록되어 있는 대상자입니다.',
       });
     }
 
-    // 중복이 없을 때
+    // [체크 2] usage_applications (이용 신청 테이블)에서 중복 확인
+    const { data: applicationData, error: aError } = await supabase
+      .from('usage_applications')
+      .select('id')
+      .eq('participant_name', name)
+      .eq('birth_date', birthDate)
+      .limit(1);
+
+    if (aError) {
+      console.warn('usage_applications table query warning:', aError.message);
+    }
+
+    if (applicationData && applicationData.length > 0) {
+      return NextResponse.json({
+        isDuplicate: true,
+        exists: true,
+        message: '이미 신청 내역이 존재하여 중복 등록할 수 없습니다.',
+      });
+    }
+
+    // 둘 다 없을 경우 신규 등록 가능
     return NextResponse.json({
       isDuplicate: false,
       exists: false,
