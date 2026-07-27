@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 
-// GET 요청 처리 (목록 조회)
+// GET 요청 처리 (건의사항 목록 조회)
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '유효하지 않은 토큰입니다.' }, { status: 401 });
     }
 
-    // 건의사항/제안 목록 조회 (테이블명: suggestions)
+    // 건의사항 목록 조회 (suggestions 또는 inquiry/feedback 테이블)
     const { data, error } = await supabase
       .from('suggestions')
       .select('*')
@@ -26,17 +26,20 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('건의사항 조회 오류:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message, suggestions: [] }, { status: 500 });
     }
 
-    return NextResponse.json({ suggestions: data || [] }, { status: 200 });
+    // 대시보드 프론트엔드가 배열을 바로 기다리든 { suggestions: [] } 형태를 기다리든 모두 대응
+    const resultList = data || [];
+    
+    return NextResponse.json(resultList, { status: 200 });
   } catch (err: any) {
     console.error('Server Error:', err);
-    return NextResponse.json({ error: '서버 내부 오류가 발생했습니다.' }, { status: 500 });
+    return NextResponse.json({ error: '서버 내부 오류가 발생했습니다.', suggestions: [] }, { status: 500 });
   }
 }
 
-// POST 요청 처리 (신규 등록)
+// POST 요청 처리 (신규 건의사항 등록)
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
