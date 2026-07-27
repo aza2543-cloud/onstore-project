@@ -2,10 +2,64 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-// 백엔드 API에서는 RLS를 우회하고 데이터를 안전하게 처리할 수 있는 SERVICE_ROLE_KEY를 사용합니다.
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+// 1. GET: 중복 대상자 조회 기능 (추가됨)
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const name = searchParams.get('name')?.trim();
+    const birthDate = searchParams.get('birthDate')?.trim();
+
+    if (!name || !birthDate) {
+      return NextResponse.json(
+        { isDuplicate: false, message: '이름과 생년월일을 정확히 입력해주세요.' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // usage_applications 테이블에서 이름과 생년월일 중복 체크 (공백 제거 후 비교)
+    const { data, error } = await supabase
+      .from('usage_applications')
+      .select('id, participant_name, birth_date, created_at')
+      .eq('participant_name', name)
+      .eq('birth_date', birthDate)
+      .limit(1);
+
+    if (error) {
+      console.error('Check duplicate error:', error);
+      throw error;
+    }
+
+    // 중복 데이터가 1건이라도 존재하면 중복 처리
+    if (data && data.length > 0) {
+      return NextResponse.json({
+        isDuplicate: true,
+        exists: true,
+        message: '이미 등록되어 있는 대상자입니다.',
+        applicant: data[0],
+      });
+    }
+
+    // 중복이 없을 때
+    return NextResponse.json({
+      isDuplicate: false,
+      exists: false,
+      message: '신규 등록이 가능한 대상자입니다.',
+    });
+  } catch (error: any) {
+    console.error('API /api/apply GET Error:', error);
+    return NextResponse.json(
+      { error: error.message || '중복 조회 중 오류가 발생했습니다.' },
+      { status: 500 }
+    );
+  }
+}
+
+// 2. POST: 신청서 제출 기능 (기존 유지)
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -23,12 +77,11 @@ export async function POST(request: Request) {
     const storeName = formData.get('storeName') as string;
     const supportReason = formData.get('supportReason') as string;
 
-    // Service Role Key 기반 Admin Client 생성
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (type === 'general') {
-      const participantName = formData.get('participantName') as string;
-      const birthDate = formData.get('birthDate') as string;
+      const participantName = (formData.get('participantName') as string)?.trim();
+      const birthDate = (formData.get('birthDate') as string)?.trim();
       const phone = formData.get('phone') as string;
       const gender = formData.get('gender') as string;
       const dong = formData.get('dong') as string;
@@ -39,7 +92,6 @@ export async function POST(request: Request) {
 
       let receiptUrl: string | null = null;
 
-      // 영수증 파일이 첨부된 경우 Supabase Storage에 업로드
       if (receiptFile && receiptFile.size > 0) {
         try {
           const fileExt = receiptFile.name.split('.').pop();
@@ -63,7 +115,6 @@ export async function POST(request: Request) {
         }
       }
 
-      // usage_applications 테이블에 전체 데이터 저장
       const { error } = await supabase.from('usage_applications').insert([
         {
           type,
@@ -93,7 +144,6 @@ export async function POST(request: Request) {
       const targetCountRaw = formData.get('targetCount');
       const amountRaw = formData.get('amount');
 
-      // 안전한 숫자 변환 (NaN 및 빈값 방지)
       const targetCount = targetCountRaw ? parseInt(String(targetCountRaw), 10) : 0;
       const amount = amountRaw ? parseInt(String(amountRaw), 10) : 0;
 
