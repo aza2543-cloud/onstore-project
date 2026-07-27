@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
 
 // GET 요청 처리 (목록 조회)
 export async function GET(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '인증 토큰이 필요합니다.' }, { status: 401 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseBrowserClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '인증 토큰이 필요합니다.' }, { status: 401 });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseBrowserClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
