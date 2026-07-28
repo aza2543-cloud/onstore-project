@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 
+// GET 요청 처리 (건의사항 목록 - 순수 배열 반환)
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -28,23 +29,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([], { status: 200 });
     }
 
-    const list = data || [];
-
-    // 프론트엔드에서 data.suggestions로 접근하든, data(배열)로 접근하든 
-    // 둘 다 정상 동작하도록 Response 객체를 직접 구성
-    return new NextResponse(
-      JSON.stringify(Object.assign([...list], { suggestions: list, data: list })),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    // 프론트엔드 Table 컴포넌트가 바로 map을 돌릴 수 있도록 순수 배열만 반환
+    return NextResponse.json(data || [], { status: 200 });
   } catch (err: any) {
     console.error('Server Error:', err);
     return NextResponse.json([], { status: 200 });
   }
 }
 
+// POST 요청 처리
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
