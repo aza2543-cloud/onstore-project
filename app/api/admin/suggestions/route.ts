@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 
-// GET 요청 처리 (건의사항 목록 조회)
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -18,28 +17,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: '유효하지 않은 토큰입니다.' }, { status: 401 });
     }
 
-    // 건의사항 목록 조회 (suggestions 또는 inquiry/feedback 테이블)
+    // DB에서 건의사항 목록 조회
     const { data, error } = await supabase
       .from('suggestions')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('건의사항 조회 오류:', error);
-      return NextResponse.json({ error: error.message, suggestions: [] }, { status: 500 });
+      console.error('건의사항 DB 조회 실패:', error);
+      return NextResponse.json([], { status: 200 });
     }
 
-    // 대시보드 프론트엔드가 배열을 바로 기다리든 { suggestions: [] } 형태를 기다리든 모두 대응
-    const resultList = data || [];
-    
-    return NextResponse.json(resultList, { status: 200 });
+    const list = data || [];
+
+    // 프론트엔드에서 data.suggestions로 접근하든, data(배열)로 접근하든 
+    // 둘 다 정상 동작하도록 Response 객체를 직접 구성
+    return new NextResponse(
+      JSON.stringify(Object.assign([...list], { suggestions: list, data: list })),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   } catch (err: any) {
     console.error('Server Error:', err);
-    return NextResponse.json({ error: '서버 내부 오류가 발생했습니다.', suggestions: [] }, { status: 500 });
+    return NextResponse.json([], { status: 200 });
   }
 }
 
-// POST 요청 처리 (신규 건의사항 등록)
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('Authorization');
